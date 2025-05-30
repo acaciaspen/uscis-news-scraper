@@ -1,0 +1,28 @@
+name: Run USCIS Scraper
+
+on:
+  schedule:
+    # 每天凌晨 1 點執行 (UTC時間)
+    - cron: '0 1 * * *'
+  workflow_dispatch: # 允許手動觸發
+
+jobs:
+  run-scraper:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4
+
+      - name: Run scraper.py
+        run: python scraper.py
