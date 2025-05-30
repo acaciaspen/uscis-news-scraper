@@ -1,0 +1,76 @@
+import requests
+from bs4 import BeautifulSoup
+
+def fetch_uscis_news():
+    url = "https://www.uscis.gov/newsroom/news-releases"
+    response = requests.get(url)
+    if response.status_code != 200:
+        print(f"Failed to retrieve page, status code: {response.status_code}")
+        return
+
+    soup = BeautifulSoup(response.text, "html.parser")
+    # 找所有新聞項目連結
+    news_links = soup.select('.views-row .field-content a[hreflang="en"]')
+
+    for link in news_links:
+        title = link.get_text(strip=True)
+        href = link['href']
+        # 組成完整網址（因為 href 是相對路徑）
+        full_url = f"https://www.uscis.gov{href}"
+        print(f"Title: {title}")
+        print(f"Link: {full_url}\n")
+
+if __name__ == "__main__":
+    fetch_uscis_news()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
