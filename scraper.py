@@ -1,0 +1,72 @@
+import os
+import json
+import requests
+from bs4 import BeautifulSoup
+from requests.auth import HTTPBasicAuth
+
+POSTED_FILE = "posted.json"
+
+def load_posted():
+    if os.path.exists(POSTED_FILE):
+        with open(POSTED_FILE, "r", encoding="utf-8") as f:
+            return set(json.load(f))
+    return set()
+
+def save_posted(posted_set):
+    with open(POSTED_FILE, "w", encoding="utf-8") as f:
+        json.dump(list(posted_set), f, ensure_ascii=False, indent=2)
+
+def fetch_uscis_news():
+    url = "https://www.uscis.gov/newsroom/news-releases"
+    response = requests.get(url)
+    if response.status_code != 200:
+        print(f"Failed to retrieve page, status code: {response.status_code}")
+        return []
+
+    soup = BeautifulSoup(response.text, "html.parser")
+    news_links = soup.select('.views-row .field-content a[hreflang="en"]')
+
+    news_items = []
+    for link in news_links:
+        title = link.get_text(strip=True)
+        href = link['href']
+        full_url = f"https://www.uscis.gov{href}"
+        news_items.append({'title': title, 'url': full_url})
+
+    return news_items
+
+def post_to_wordpress(title, url, wp_site, wp_user, wp_password):
+    api_url = f"{wp_site}/wp-json/wp/v2/posts"
+    post_data = {
+        'title': title,
+        'content': f'<a href="{url}" target="_blank">{url}</a>',
+        'status': 'publish'
+    }
+    auth = HTTPBasicAuth(wp_user, wp_password)
+    response = requests.post(api_url, json=post_data, auth=auth)
+    if response.status_code == 201:
+        print(f"Posted: {title}")
+        return True
+    else:
+        print(f"Failed to post: {title}, Status code: {response.status_code}, Response: {response.text}")
+        return False
+
+if __name__ == "__main__":
+    WP_SITE = os.getenv("WP_SITE_URL")
+    WP_USER = os.getenv("WP_USERNAME")
+    WP_PASSWORD = os.getenv("WP_APP_PASSWORD")
+
+    if not all([WP_SITE, WP_USER, WP_PASSWORD]):
+        print("請先設定環境變數 WP_SITE_URL, WP_USERNAME, WP_APP_PASSWORD")
+        exit(1)
+
+    posted = load_posted()
+    news = fetch_uscis_news()
+
+    for item in news:
+        if item['url'] not in posted:
+            success = post_to_wordpress(item['title'], item['url'], WP_SITE, WP_USER, WP_PASSWORD)
+            if success:
+                posted.add(item['url'])
+
+    save_posted(posted)
