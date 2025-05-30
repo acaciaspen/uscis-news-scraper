@@ -3,7 +3,7 @@ name: USCIS Newsroom Scraper
 on:
   schedule:
     - cron: '0 * * * *'  # 每小時執行一次
-  workflow_dispatch:       # 支援手動執行
+  workflow_dispatch:      # 允許手動觸發
 
 jobs:
   scrape:
@@ -19,9 +19,11 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install requests beautifulsoup4
+        run: pip install requests beautifulsoup4
 
       - name: Run scraper
+        env:
+          WP_SITE_URL: ${{ secrets.WP_SITE_URL }}
+          WP_USERNAME: ${{ secrets.WP_USERNAME }}
+          WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
         run: python scraper.py
